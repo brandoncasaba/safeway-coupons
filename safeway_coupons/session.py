@@ -33,8 +33,8 @@ class ExceptionWithAttachments(Exception):
 
 class BaseSession:
     USER_AGENT = (
-        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:122.0) "
-        "Gecko/20100101 Firefox/122.0"
+        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) "
+        "Gecko/20100101 Firefox/132.0"
     )
 
     @property
@@ -96,8 +96,8 @@ class LoginSession(BaseSession):
             driver.implicitly_wait(10)
             wait = WebDriverWait(driver, 10)
             # Navigate to the website URL
-            url = "https://www.safeway.com"
-            print("Connect to safeway.com")
+            url = "https://www.safeway.com/account/sign-in.html"
+            print("Connect to safeway.com/account/sign-in.html")
             driver.get(url)
             try:
                 button = driver.find_element(
@@ -113,18 +113,6 @@ class LoginSession(BaseSession):
                     driver.get(url)
             except NoSuchElementException:
                 print("Skipping cookie prompt which is not present")
-            print("Open Sign In sidebar")
-            wait.until(
-                ec.visibility_of_element_located(
-                    (By.XPATH, "//span [contains(text(), 'Sign In')]")
-                )
-            ).click()
-            print("Open Sign In form")
-            wait.until(
-                ec.visibility_of_element_located(
-                    (By.XPATH, "//a [contains(text(), 'Sign In')]")
-                )
-            ).click()
             time.sleep(2)
             print("Populate Sign In form")
             driver.find_element(By.ID, "label-email").send_keys(
@@ -134,18 +122,6 @@ class LoginSession(BaseSession):
                 account.password
             )
             time.sleep(0.5)
-            try:
-                driver.find_element(
-                    By.XPATH,
-                    "//span [contains(text(), 'Keep Me Signed In')]",
-                ).click()
-                print("Deselect Keep Me Signed In")
-                time.sleep(0.5)
-            except NoSuchElementException:
-                print(
-                    "Skipping Keep Me Signed In checkbox "
-                    "which is not present"
-                )
             print("Click Sign In button")
             driver.find_element("id", "btnSignIn").click()
             time.sleep(0.5)
