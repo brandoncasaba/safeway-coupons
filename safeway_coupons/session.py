@@ -34,8 +34,8 @@ class ExceptionWithAttachments(Exception):
 
 class BaseSession:
     USER_AGENT = (
-        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:122.0) "
-        "Gecko/20100101 Firefox/122.0"
+        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) "
+        "Gecko/20100101 Firefox/132.0"
     )
 
     @property
@@ -92,13 +92,21 @@ class LoginSession(BaseSession):
         except StaleElementReferenceException:
             return False
 
+    @staticmethod
+    def _element_exists(driver: uc.Chrome, id: str) -> bool:
+        try:
+            driver.find_element("id", id)
+        except NoSuchElementException:
+            return False
+        return True
+
     def _login(self, account: Account) -> None:
         with self._chrome_driver() as driver:
             driver.implicitly_wait(10)
             wait = WebDriverWait(driver, 10)
             # Navigate to the website URL
-            url = "https://www.safeway.com"
-            print("Connect to safeway.com")
+            url = "https://www.safeway.com/account/sign-in.html"
+            print("Connect to safeway.com/account/sign-in.html")
             driver.get(url)
             try:
                 button = driver.find_element(
@@ -114,35 +122,33 @@ class LoginSession(BaseSession):
                     driver.get(url)
             except NoSuchElementException:
                 print("Skipping cookie prompt which is not present")
-            print("Open Sign In sidebar")
-            wait.until(
-                ec.visibility_of_element_located(
-                    (By.XPATH, "//span [contains(text(), 'Sign In')]")
-                )
-            ).click()
-            print("Open Sign In form")
-            wait.until(
-                ec.visibility_of_element_located(
-                    (By.XPATH, "//button [contains(text(), 'Sign in')]")
-                )
-            ).click()
             time.sleep(2)
-            print("Populate Sign In form username")
-            driver.find_element(By.ID, "enterUsername").send_keys(
-                account.username
-            )
-            time.sleep(0.5)
-            print("Click Sign in with password button")
-            driver.find_element(
-                By.XPATH, '//button[contains(text(), "Sign in with password")]'
-            ).click()
-            time.sleep(2)
-            driver.find_element(By.ID, "password").send_keys(account.password)
-            time.sleep(0.5)
-            print("Click Sign In button")
-            driver.find_element(
-                By.XPATH, '//button[contains(text(), "Sign In")]'
-            ).click()
+            print("Populate Sign In form")
+            if self._element_exists(driver, "label-email"):
+                driver.find_element(By.ID, "label-email").send_keys(
+                    account.username
+                )
+                driver.find_element(By.ID, "label-password").send_keys(
+                    account.password
+                )
+                time.sleep(0.5)
+                print("Click Sign In button")
+                driver.find_element("id", "btnSignIn").click()
+            else:
+                driver.find_element(By.ID, "enterUsername").send_keys(
+                    account.username
+                )
+                time.sleep(0.5)
+                print("Click Sign in with password button")
+                driver.find_element(By.XPATH, '//button[contains(text(), "Sign in with password")]').click()
+                time.sleep(2)
+                print("Populate password")
+                driver.find_element(By.ID, "password").send_keys(
+                    account.password
+                )
+                time.sleep(0.5)
+                print("Click Sign In button")
+                driver.find_element(By.XPATH, '//button[contains(text(), "Sign In")]').click()
             time.sleep(0.5)
             print("Wait for signed in landing page to load")
             wait.until(self._sign_in_success)
