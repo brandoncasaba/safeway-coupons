@@ -38,10 +38,9 @@ def chrome_driver(headless: bool = True) -> Iterator[uc.Chrome]:
         options.add_argument(option)
     if headless:
         options.add_argument("--headless=new")
-    version_main = re.findall('(\\d+)\\.', chrome_version())
-    if len(version_main) > 0:
-        version_main = version_main[0]
-    driver = uc.Chrome(options=options, version_main=int(version_main))
+    matches = re.findall('(\\d+)\\.', chrome_version())
+    version_main = int(matches[0]) if matches else 0
+    driver = uc.Chrome(options=options, version_main=version_main)
     yield driver
     driver.quit()
 
