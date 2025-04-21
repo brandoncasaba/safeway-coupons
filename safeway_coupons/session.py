@@ -2,6 +2,7 @@ import contextlib
 import json
 import time
 import urllib
+from pprint import pprint
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Optional
@@ -79,6 +80,8 @@ class LoginSession(BaseSession):
             raise ExceptionWithAttachments(
                 f"[{type(e).__name__}] {e}", attachments=attachments
             ) from e
+        finally:
+            driver.quit()
 
     @staticmethod
     def _sign_in_success(driver: uc.Chrome) -> bool:
@@ -89,7 +92,7 @@ class LoginSession(BaseSession):
             if not (element and element.text):
                 return False
             return not element.text.lower().startswith("sign in")
-        except StaleElementReferenceException:
+        except (StaleElementReferenceException, NoSuchElementException):
             return False
 
     @staticmethod
@@ -108,6 +111,8 @@ class LoginSession(BaseSession):
             url = "https://www.safeway.com/account/sign-in.html"
             print("Connect to safeway.com/account/sign-in.html")
             driver.get(url)
+            #driver.delete_all_cookies() # uncomment to clear cookies
+            #driver.get(url)
             try:
                 button = driver.find_element(
                     By.XPATH,
@@ -123,35 +128,46 @@ class LoginSession(BaseSession):
             except NoSuchElementException:
                 print("Skipping cookie prompt which is not present")
             time.sleep(2)
-            print("Populate Sign In form")
-            if self._element_exists(driver, "label-email"):
-                driver.find_element(By.ID, "label-email").send_keys(
-                    account.username
-                )
-                driver.find_element(By.ID, "label-password").send_keys(
-                    account.password
-                )
-                time.sleep(0.5)
-                print("Click Sign In button")
-                driver.find_element("id", "btnSignIn").click()
-            else:
-                driver.find_element(By.ID, "enterUsername").send_keys(
-                    account.username
-                )
-                time.sleep(0.5)
-                print("Click Sign in with password button")
-                driver.find_element(By.XPATH, '//button[contains(text(), "Sign in with password")]').click()
+
+            # Check if already signed in
+            if not self._sign_in_success(driver):
                 time.sleep(2)
-                print("Populate password")
-                driver.find_element(By.ID, "password").send_keys(
-                    account.password
+                print("Populate Sign In form")
+
+                # Support new and old sign in flows
+                if self._element_exists(driver, "label-email"):
+                    driver.find_element(By.ID, "label-email").send_keys(
+                        account.username
+                    )
+                    driver.find_element(By.ID, "label-password").send_keys(
+                        account.password
+                    )
+                    time.sleep(0.5)
+                    print("Click Sign In button")
+                    driver.find_element("id", "btnSignIn").click()
+                else:
+                    driver.find_element(By.ID, "enterUsername").send_keys(
+                        account.username
+                    )
+                    time.sleep(0.5)
+                    print("Click Sign in with password button")
+                    driver.find_element(By.XPATH, '//button[contains(text(), "Sign in with password")]').click()
+                    time.sleep(2)
+                    print("Populate password")
+                    driver.find_element(By.ID, "password").send_keys(
+                        account.password
+                    )
+                    time.sleep(0.5)
+                    print("Click Sign In button")
+                    driver.find_element(By.XPATH, '//button[contains(text(), "Sign In")]').click()
+                time.sleep(2)
+
+                print("Wait for signed in landing page to load")
+                element = driver.find_element(
+                    By.XPATH, '//span [contains(@class, "user-greeting")]'
                 )
-                time.sleep(0.5)
-                print("Click Sign In button")
-                driver.find_element(By.XPATH, '//button[contains(text(), "Sign In")]').click()
-            time.sleep(0.5)
-            print("Wait for signed in landing page to load")
-            wait.until(self._sign_in_success)
+                if not self._sign_in_success(driver):
+                    raise Exception("Sign in failure")
             print("Retrieve session information")
             session_cookie = self._parse_cookie_value(
                 driver.get_cookie("SWY_SHARED_SESSION")["value"]
