@@ -1,8 +1,10 @@
 import contextlib
 import json
+import select
+import sys
 import time
 import urllib
-from pprint import pprint
+import requests
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Optional
@@ -34,10 +36,7 @@ class ExceptionWithAttachments(Exception):
 
 
 class BaseSession:
-    USER_AGENT = (
-        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) "
-        "Gecko/20100101 Firefox/132.0"
-    )
+    USER_AGENT = ( "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" )
 
     @property
     def requests(self) -> requests.Session:
@@ -52,9 +51,10 @@ class BaseSession:
 
 
 class LoginSession(BaseSession):
-    def __init__(self, account: Account, debug_dir: Optional[Path]) -> None:
+    def __init__(self, account: Account, interactive_sign_in: bool, debug_dir: Optional[Path]) -> None:
         self.access_token: Optional[str] = None
         self.store_id: Optional[str] = None
+        self.interactive_sign_in = interactive_sign_in
         self.debug_dir: Optional[Path] = debug_dir
         try:
             self._login(account)
@@ -102,6 +102,15 @@ class LoginSession(BaseSession):
         except NoSuchElementException:
             return False
         return True
+    
+    @staticmethod
+    def _get_code_from_human(timeout=290, interval=10) -> str:
+        print("Wait for the SMS OTP code and enter it in the terminal (5 minute max): ", end="", flush=True)
+        ready, _, _ = select.select([sys.stdin], [], [], timeout)
+        if ready:
+            return sys.stdin.readline().strip()
+        else:
+            raise Exception("Timeout waiting for OTP")
 
     def _login(self, account: Account) -> None:
         with self._chrome_driver() as driver:
@@ -162,12 +171,33 @@ class LoginSession(BaseSession):
                     driver.find_element(By.XPATH, '//button[contains(text(), "Sign In")]').click()
                 time.sleep(2)
 
+                # Check for verify device
+                print("Check for verify device required")
+                if self._element_exists(driver, "verifyOptionForm"):
+                    if not self.interactive_sign_in:
+                        raise Exception(
+                            "Interactive sign-in required, but not enabled. Run with --interactive-sign-in"
+                        )
+                    print("Click Text code")
+                    driver.find_element(By.XPATH, '//span[contains(text(), "Text code to")]').click()
+                    time.sleep(0.5)
+                    print("Click Continue button")
+                    driver.find_element(By.XPATH, '//button[contains(text(), "Continue")]').click()
+                    code = self._get_code_from_human()
+                    print("Typing code " + code + " in to field")
+                    driver.find_element(By.XPATH, '//input[@formcontrolname="otpCode"]').send_keys(code)
+                    time.sleep(0.5)
+                    driver.find_element(By.XPATH, '//button[contains(text(), "Sign In")]').click()
+                    time.sleep(2)
+
+                # Check for sign in success
                 print("Wait for signed in landing page to load")
                 element = driver.find_element(
                     By.XPATH, '//span [contains(@class, "user-greeting")]'
                 )
                 if not self._sign_in_success(driver):
-                    raise Exception("Sign in failure")
+                    raise Exception("Sign in failure, unable to verify user is signed in")
+                               
             print("Retrieve session information")
             session_cookie = self._parse_cookie_value(
                 driver.get_cookie("SWY_SHARED_SESSION")["value"]

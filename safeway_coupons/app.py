@@ -98,6 +98,13 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Continue clipping coupons for the next account on error",
     )
+    arg_parser.add_argument(
+        "-I",
+        "--interactive-sign-in",
+        dest="interactive_sign_in",
+        action="store_true",
+        help="Allow for interactive 2fa sign-in",
+    )
     return arg_parser.parse_args()
 
 
@@ -117,6 +124,7 @@ def main() -> None:
         sleep_level=args.sleep_level,
         dry_run=args.dry_run,
         max_clip_count=args.max_clip_count,
+        interactive_sign_in=args.interactive_sign_in,
     )
     errors = 0
     try:

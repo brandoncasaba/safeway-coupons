@@ -13,8 +13,8 @@ from .session import BaseSession, LoginSession
 
 
 class SafewayClient(BaseSession):
-    def __init__(self, account: Account, debug_dir: Optional[Path]) -> None:
-        self.session = LoginSession(account, debug_dir)
+    def __init__(self, account: Account, interactive_sign_in: bool, debug_dir: Optional[Path]) -> None:
+        self.session = LoginSession(account, interactive_sign_in, debug_dir)
         self.requests.headers.update(
             {
                 "Authorization": f"Bearer {self.session.access_token}",
