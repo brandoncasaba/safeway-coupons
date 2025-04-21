@@ -183,12 +183,15 @@ class LoginSession(BaseSession):
                     time.sleep(0.5)
                     print("Click Continue button")
                     driver.find_element(By.XPATH, '//button[contains(text(), "Continue")]').click()
+
                     code = self._get_code_from_human()
                     print("Typing code " + code + " in to field")
                     driver.find_element(By.XPATH, '//input[@formcontrolname="otpCode"]').send_keys(code)
                     time.sleep(0.5)
                     driver.find_element(By.XPATH, '//button[contains(text(), "Sign In")]').click()
                     time.sleep(2)
+                    if self._element_exists(driver, "verifyOptionForm"):
+                        raise Exception("Code not accepted")
 
                 # Check for sign in success
                 print("Wait for signed in landing page to load")
