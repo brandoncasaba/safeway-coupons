@@ -27,7 +27,7 @@ def chrome_driver(headless: bool = True) -> Iterator[uc.Chrome]:
     options = uc.ChromeOptions()
     options.headless = headless
     for option in [
-        "--user-data-dir=/root/selenium",
+        "--user-data-dir=" + str(Path.home()) + "/selenium-user-data",
         "--no-sandbox",
         "--disable-extensions",
         "--disable-application-cache",
