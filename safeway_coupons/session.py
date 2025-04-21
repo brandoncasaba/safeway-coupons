@@ -105,7 +105,7 @@ class LoginSession(BaseSession):
     
     @staticmethod
     def _get_code_from_human(timeout=290, interval=10) -> str:
-        print("Wait for the SMS OTP code and enter it in the terminal (5 minute max): ", end="", flush=True)
+        print("Wait for the SMS OTP code and enter it here in the terminal (5 minute max): ", end="", flush=True)
         ready, _, _ = select.select([sys.stdin], [], [], timeout)
         if ready:
             return sys.stdin.readline().strip()
@@ -139,8 +139,8 @@ class LoginSession(BaseSession):
             time.sleep(2)
 
             # Check if already signed in
+            print("Check if already signed in")
             if not self._sign_in_success(driver):
-                time.sleep(2)
                 print("Populate Sign In form")
 
                 # Support new and old sign in flows
