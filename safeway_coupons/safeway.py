@@ -42,9 +42,6 @@ class SafewayCoupons:
             unclipped_offers = [
                 o for o in offers if o.status == OfferStatus.Unclipped
             ]
-            if not unclipped_offers:
-                print("Nothing to do")
-                return
             rjust_size = len(str(len(unclipped_offers)))
             for i, offer in enumerate(
                 yield_delay(
