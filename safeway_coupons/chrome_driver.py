@@ -71,7 +71,10 @@ def init() -> None:
 #        print(chrome_driver_version())
 #        return
     print("Initializing Chrome Driver")
-    with chrome_driver() as driver:
-        print("Connect to example.com")
-        driver.get("https://example.com")
+    try:
+        with chrome_driver() as driver:
+            print("Connect to example.com")
+            driver.get("https://example.com")
+    finally:
+        driver.quit()
     print(chrome_driver_version())
