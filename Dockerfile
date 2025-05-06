@@ -30,6 +30,8 @@ COPY docker/entrypoint /
 COPY . /python-build
 RUN python3 -m pip install /python-build && rm -rf /python-build
 RUN safeway-coupons-init-chromedriver
+# Delete selenium-user-data to cleanup after chromedriver init script - https://github.com/smkent/safeway-coupons/issues/139#issuecomment-2849975949
+RUN rm -rf /root/selenium-user-data
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["/entrypoint"]
