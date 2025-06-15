@@ -33,7 +33,8 @@ class SafewayClient(BaseSession):
                 f"&rand={random.randrange(100000, 999999)}"
             )
             response.raise_for_status()
-            return OfferList.from_dict(response.json()).offers
+            offers_dict = OfferList.from_dict(response.json()).offers
+            return list(offers_dict.values())
         except requests.exceptions.HTTPError as e:
             raise HTTPError(e, response) from e
 
